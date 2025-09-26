@@ -2,8 +2,6 @@
 
 An AI-powered assistant that unifies job boards, tailors opportunities to your resume, and generates personalized cover letters — helping you apply faster and smarter.
 
---
-
 ## ✨ Features
 - 📄 **Resume Parsing** – Extracts skills, experience, and education from uploaded resumes.
 - 🔎 **Job Aggregation** – Fetches job postings from multiple boards (APIs + scraping).
