@@ -19,3 +19,15 @@ An AI-powered assistant that unifies job boards, tailors opportunities to your r
 - **Database**: PostgreSQL + Redis
 - **Frontend**: Next.js, TailwindCSS, shadcn/ui
 - **Infra**: Docker, GitHub Actions, AWS S3, Vercel
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- Docker & Docker Compose
+
+### Clone Repo
+```bash
+git clone https://github.com/adwaiths05/job-hunting-agent.git
+cd job-hunting-agent
