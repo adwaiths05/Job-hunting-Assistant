@@ -31,3 +31,11 @@ An AI-powered assistant that unifies job boards, tailors opportunities to your r
 ```bash
 git clone https://github.com/adwaiths05/job-hunting-agent.git
 cd job-hunting-agent
+
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+cd frontend
+npm install
+npm run dev
