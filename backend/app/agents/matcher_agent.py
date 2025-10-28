@@ -1,14 +1,12 @@
-from backend.app.services.huggingface_client import HuggingFaceClient
-from backend.app.services.weaviate_client import WeaviateClient
+from backend.app.services.matcher import Matcher
 
 class MatcherAgent:
     def __init__(self):
-        self.hf_client = HuggingFaceClient()
-        self.weaviate_client = WeaviateClient()
+        self.matcher = Matcher()
 
-    def find_best_jobs(self, resume_text: str, top_k: int = 10):
-        # Get embedding of resume
-        resume_emb = self.hf_client.get_embedding(resume_text)
-        # Query Weaviate for similar jobs
-        results = self.weaviate_client.query_similar_jobs(resume_emb, top_k)
-        return results
+    def get_best_matches(self, resume_text: str, top_k: int = 10):
+        """
+        Returns a list of top K job matches from Weaviate for a given resume
+        """
+        matched_jobs = self.matcher.match_jobs_to_resume(resume_text, top_k)
+        return matched_jobs
