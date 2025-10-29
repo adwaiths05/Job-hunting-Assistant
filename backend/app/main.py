@@ -7,7 +7,7 @@ app = FastAPI(title="AI Job Hunting Assistant", version="1.0")
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # update for production
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
