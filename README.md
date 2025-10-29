@@ -58,7 +58,7 @@ job-hunting-agent/
 │   │   │   │   ├── jobs.py             # Job search + Weaviate queries
 │   │   │   │   ├── coverletter.py      # Cover letter generation
 │   │   │   │   ├── tracking.py         # Application tracking
-│   │   │   │   └── users.py            # Auth / profile management
+│   │   │   │   └── matcher.py            # Job matching and ranking
 │   │   │   └── __init__.py
 │   │   │
 │   │   ├── core/                       # Core logic
