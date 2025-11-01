@@ -1,9 +1,29 @@
 import weaviate
+from app.core.config import WEAVIATE_URL
 
 class WeaviateClient:
     def __init__(self):
-        self.client = weaviate.Client("http://localhost:8080")  
+        # Connect to Weaviate
+        self.client = weaviate.Client(WEAVIATE_URL)
         self.class_name = "JobPosting"
+
+        # Check if Weaviate is ready
+        if not self.client.is_ready():
+            raise ConnectionError(f"Weaviate is not ready at {WEAVIATE_URL}")
+
+        # Ensure the class/schema exists
+        self.ensure_schema()
+
+    def ensure_schema(self):
+        if not any(cls['class'] == self.class_name for cls in self.client.schema.get()['classes']):
+            self.client.schema.create_class({
+                "class": self.class_name,
+                "properties": [
+                    {"name": "title", "dataType": ["string"]},
+                    {"name": "company", "dataType": ["string"]},
+                    {"name": "description", "dataType": ["text"]}
+                ]
+            })
 
     def add_job(self, job_title: str, company: str, description: str, embedding: list):
         data_object = {

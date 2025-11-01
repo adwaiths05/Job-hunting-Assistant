@@ -1,10 +1,28 @@
-from fastapi import APIRouter, Query
-from backend.app.agents.job_agent import JobAgent
+from fastapi import APIRouter
+from pydantic import BaseModel
+from app.services.weaviate_client import WeaviateClient
 
 router = APIRouter()
-job_agent = JobAgent()
+weaviate_client = WeaviateClient()
 
-@router.get("/fetch")
-async def fetch_jobs(query: str = Query(...), location: str = Query("Remote")):
-    jobs = job_agent.fetch_and_store_jobs(query=query, location=location)
-    return {"count": len(jobs), "jobs": jobs}
+# Request models
+class JobInput(BaseModel):
+    title: str
+    company: str
+    description: str
+    embedding: list
+
+class SearchInput(BaseModel):
+    embedding: list
+    top_k: int = 10
+
+# Routes
+@router.post("/add-job")
+def add_job(job: JobInput):
+    weaviate_client.add_job(job.title, job.company, job.description, job.embedding)
+    return {"status": "success"}
+
+@router.post("/search-jobs")
+def search_jobs(search: SearchInput):
+    results = weaviate_client.query_similar_jobs(search.embedding, search.top_k)
+    return {"results": results}
