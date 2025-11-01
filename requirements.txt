@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+weaviate-client
+python-dotenv
+pydantic
+requests
+sqlalchemy
+psycopg2-binary   

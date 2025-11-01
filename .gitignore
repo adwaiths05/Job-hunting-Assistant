@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+*.sqlite3
+venv/
+.env
+
+# VSCode
+.vscode/
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+
+# Docker
+*.dockerignore
+docker-compose.override.yml
+D:\weaviate_data/
+
+# Pytest cache
+.pytest_cache/
+
+# Node / frontend 
+node_modules/
+.next/
