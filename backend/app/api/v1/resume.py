@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File
-from backend.app.agents.resume_agent import ResumeAgent
+from app.agents.resume_agent import ResumeAgent
 
 router = APIRouter()
 resume_agent = ResumeAgent()

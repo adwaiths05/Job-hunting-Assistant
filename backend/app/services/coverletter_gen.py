@@ -1,4 +1,4 @@
-from backend.app.services.huggingface_client import HuggingFaceClient
+from app.services.huggingface_client import HuggingFaceClient
 
 class CoverLetterGenerator:
     def __init__(self):

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.api.v1 import resume, jobs, matcher, coverletter, tracking
+from app.api.v1 import resume, jobs, matcher, coverletter, tracking
 
 app = FastAPI(title="AI Job Hunting Assistant", version="1.0")
 

@@ -1,6 +1,6 @@
-from backend.app.services.job_fetcher import JobFetcher
-from backend.app.services.huggingface_client import HuggingFaceClient
-from backend.app.services.weaviate_client import WeaviateClient
+from app.services.job_fetcher import JobFetcher
+from app.services.huggingface_client import HuggingFaceClient
+from app.services.weaviate_client import WeaviateClient
 
 class JobAgent:
     def __init__(self):

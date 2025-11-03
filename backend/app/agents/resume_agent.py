@@ -1,4 +1,4 @@
-from backend.app.services.resume_parser import ResumeParser
+from app.services.resume_parser import ResumeParser
 
 class ResumeAgent:
     def __init__(self):

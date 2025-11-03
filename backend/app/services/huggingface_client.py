@@ -2,19 +2,18 @@ from transformers import pipeline
 
 class HuggingFaceClient:
     def __init__(self):
-        # Load models once (can be CPU/GPU specific)
         self.cover_letter_model = pipeline(
-            "text-generation", 
-            model="meta-llama/Llama-2-7b-hf", 
-            device=0  # GPU, set -1 for CPU
+            "text-generation",
+            model="gpt2",  # small, open model for testing
+            device=-1       # CPU
         )
         self.resume_qa_model = pipeline(
-            "question-answering", 
-            model="deepset/roberta-base-squad2", 
-            device=0
+            "question-answering",
+            model="distilbert-base-cased-distilled-squad",
+            device=-1
         )
         self.embedding_model = pipeline(
-            "feature-extraction", 
+            "feature-extraction",
             model="sentence-transformers/all-MiniLM-L6-v2"
         )
 
@@ -28,5 +27,4 @@ class HuggingFaceClient:
 
     def get_embedding(self, text: str):
         emb = self.embedding_model(text)
-        # Flatten the embedding to 1D list if needed
         return emb[0][0]

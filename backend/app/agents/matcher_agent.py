@@ -1,4 +1,4 @@
-from backend.app.services.matcher import Matcher
+from app.services.matcher import Matcher
 
 class MatcherAgent:
     def __init__(self):

@@ -1,4 +1,4 @@
-from backend.app.services.notion_sync import NotionSync
+from app.services.notion_sync import NotionSync
 
 class TrackerAgent:
     def __init__(self, notion_token: str, database_id: str):

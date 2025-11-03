@@ -1,5 +1,5 @@
 import spacy
-from backend.app.services.huggingface_client import HuggingFaceClient
+from app.services.huggingface_client import HuggingFaceClient
 
 nlp = spacy.load("en_core_web_sm")
 

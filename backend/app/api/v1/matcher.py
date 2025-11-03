@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body
-from backend.app.agents.matcher_agent import MatcherAgent
+from app.agents.matcher_agent import MatcherAgent
 
 router = APIRouter()
 matcher_agent = MatcherAgent()

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body
-from backend.app.agents.coverletter_agent import CoverLetterAgent
+from app.agents.coverletter_agent import CoverLetterAgent
 
 router = APIRouter()
 cover_agent = CoverLetterAgent()

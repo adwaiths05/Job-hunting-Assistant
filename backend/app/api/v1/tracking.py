@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body
-from backend.app.agents.tracker_agent import TrackerAgent
+from app.agents.tracker_agent import TrackerAgent
 import os
 
 router = APIRouter()

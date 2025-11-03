@@ -1,5 +1,5 @@
 # backend/app/agents/coverletter_agent.py
-from backend.app.services.coverletter_gen import CoverLetterGenerator
+from app.services.coverletter_gen import CoverLetterGenerator
 
 class CoverLetterAgent:
     def __init__(self):

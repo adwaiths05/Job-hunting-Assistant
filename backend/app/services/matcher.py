@@ -1,6 +1,6 @@
 # backend/app/services/matcher.py
-from backend.app.services.huggingface_client import HuggingFaceClient
-from backend.app.services.weaviate_client import WeaviateClient
+from app.services.huggingface_client import HuggingFaceClient
+from app.services.weaviate_client import WeaviateClient
 
 class Matcher:
     def __init__(self):
