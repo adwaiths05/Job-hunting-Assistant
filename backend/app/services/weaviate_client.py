@@ -3,46 +3,51 @@ from app.core.config import WEAVIATE_URL
 
 class WeaviateClient:
     def __init__(self):
-        # Connect to Weaviate
-        self.client = weaviate.Client(WEAVIATE_URL)
-        self.class_name = "JobPosting"
+        host = WEAVIATE_URL.replace("http://", "").replace("https://", "")
+        if ":" in host:
+            host, port = host.split(":")
+        else:
+            port = 8080
 
-        # Check if Weaviate is ready
+        self.client = weaviate.connect_to_local(
+            host=host,
+            port=int(port),
+            grpc_port=50051
+        )
+
+        # Check connection
         if not self.client.is_ready():
             raise ConnectionError(f"Weaviate is not ready at {WEAVIATE_URL}")
 
-        # Ensure the class/schema exists
+        # Ensure schema exists
         self.ensure_schema()
 
     def ensure_schema(self):
-        if not any(cls['class'] == self.class_name for cls in self.client.schema.get()['classes']):
-            self.client.schema.create_class({
-                "class": self.class_name,
-                "properties": [
-                    {"name": "title", "dataType": ["string"]},
-                    {"name": "company", "dataType": ["string"]},
-                    {"name": "description", "dataType": ["text"]}
+        existing_classes = [c.name for c in self.client.collections.list_all()]
+        if self.class_name not in existing_classes:
+            self.client.collections.create(
+                name=self.class_name,
+                vectorizer_config=weaviate.classes.config.Configure.Vectorizer.none(),
+                properties=[
+                    weaviate.classes.config.Property(name="title", data_type=weaviate.classes.config.DataType.TEXT),
+                    weaviate.classes.config.Property(name="company", data_type=weaviate.classes.config.DataType.TEXT),
+                    weaviate.classes.config.Property(name="description", data_type=weaviate.classes.config.DataType.TEXT),
                 ]
-            })
+            )
 
     def add_job(self, job_title: str, company: str, description: str, embedding: list):
-        data_object = {
+        job_collection = self.client.collections.get(self.class_name)
+        job_collection.data.insert({
             "title": job_title,
             "company": company,
             "description": description
-        }
-        self.client.data_object.create(
-            data_object,
-            class_name=self.class_name,
-            vector=embedding
-        )
+        }, vector=embedding)
 
     def query_similar_jobs(self, embedding: list, top_k: int = 10):
-        result = (
-            self.client.query
-            .get(self.class_name, ["title", "company", "description"])
-            .with_near_vector({"vector": embedding})
-            .with_limit(top_k)
-            .do()
+        job_collection = self.client.collections.get(self.class_name)
+        results = job_collection.query.near_vector(
+            near_vector=embedding,
+            limit=top_k,
+            return_properties=["title", "company", "description"]
         )
-        return result.get('data', {}).get('Get', {}).get(self.class_name, [])
+        return results.objects

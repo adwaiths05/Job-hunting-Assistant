@@ -4,6 +4,9 @@ FROM genai-base:latest
 # Set working directory
 WORKDIR /app
 
+# Copy backend source code
+COPY ./backend /app
+
 # Copy only requirements first for caching
 COPY ./requirements.txt /app/requirements.txt
 
@@ -13,11 +16,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download SpaCy English model
 RUN python -m spacy download en_core_web_sm
 
-# Copy backend source code
-COPY ./backend /app
+# Set Hugging Face cache folder inside container
+ENV HF_HOME=/app/.cache/huggingface
+
+# Pre-download Hugging Face models at build time
+RUN python -c "from transformers import pipeline; \
+pipeline('text-generation', model='gpt2', device=-1); \
+pipeline('question-answering', model='distilbert-base-cased-distilled-squad', device=-1); \
+pipeline('feature-extraction', model='sentence-transformers/all-MiniLM-L6-v2')"
 
 # Expose backend port
 EXPOSE 8000
 
 # Start FastAPI with Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]
