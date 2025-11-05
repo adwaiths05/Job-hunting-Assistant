@@ -1,13 +1,10 @@
-# Use your prebuilt base image
+# Use the prebuilt base image
 FROM genai-base:latest
 
 # Set working directory
 WORKDIR /app
 
-# Copy backend source code
-COPY ./backend /app
-
-# Copy only requirements first for caching
+# Copy only requirements first (for dependency caching)
 COPY ./requirements.txt /app/requirements.txt
 
 # Install dependencies
@@ -16,14 +13,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download SpaCy English model
 RUN python -m spacy download en_core_web_sm
 
-# Set Hugging Face cache folder inside container
+# Set Hugging Face cache folder
 ENV HF_HOME=/app/.cache/huggingface
 
-# Pre-download Hugging Face models at build time
+# === Pre-download Hugging Face models ===
+# These layers will now be cached unless base image or dependencies change
 RUN python -c "from transformers import pipeline; \
 pipeline('text-generation', model='gpt2', device=-1); \
 pipeline('question-answering', model='distilbert-base-cased-distilled-squad', device=-1); \
 pipeline('feature-extraction', model='sentence-transformers/all-MiniLM-L6-v2')"
+
+# Only now copy backend source (doesn't affect model cache)
+COPY ./backend /app
 
 # Expose backend port
 EXPOSE 8000
