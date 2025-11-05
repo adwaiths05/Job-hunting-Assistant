@@ -8,17 +8,17 @@ services:
     environment:
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
       - QUERY_DEFAULTS_LIMIT=20
-    # restart removed for debugging
+    restart: unless-stopped
 
   backend:
     build:
-      context: ..                # adjust to folder containing Dockerfile.backend
+      context: ..
       dockerfile: Dockerfile.backend
     container_name: job-backend
     ports:
       - "8000:8000"
-    environment:
-      - WEAVIATE_URL=http://weaviate:8080
+    env_file:
+      - .env           # contains WEAVIATE_URL and NOTION_TOKEN
     depends_on:
       - weaviate
-    # restart removed for debugging
+    restart: unless-stopped
