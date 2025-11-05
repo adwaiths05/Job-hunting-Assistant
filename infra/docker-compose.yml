@@ -1,0 +1,24 @@
+services:
+  weaviate:
+    image: semitechnologies/weaviate:latest
+    container_name: weaviate
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - QUERY_DEFAULTS_LIMIT=20
+    # restart removed for debugging
+
+  backend:
+    build:
+      context: ..                # adjust to folder containing Dockerfile.backend
+      dockerfile: Dockerfile.backend
+    container_name: job-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - WEAVIATE_URL=http://weaviate:8080
+    depends_on:
+      - weaviate
+    # restart removed for debugging

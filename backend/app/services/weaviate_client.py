@@ -29,7 +29,7 @@ class WeaviateClient:
         self.ensure_schema()
 
     def ensure_schema(self):
-        existing_classes = [c.name for c in self.client.collections.list_all()]
+        existing_classes = self.client.collections.list_all()  # already a list of strings
         if self.class_name not in existing_classes:
             self.client.collections.create(
                 name=self.class_name,
