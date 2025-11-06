@@ -15,7 +15,7 @@ An AI-powered assistant that unifies job boards, tailors opportunities to your r
 - **AI/NLP**: spaCy, Hugging Face, sentence-transformers
 - **Vector DB**: Weaviate
 - **Job Aggregation**: Playwright, BeautifulSoup, APIs
-- **LLMs**: OpenAI GPT-4 (cover letters)
+- **LLMs**: OpenAI GPT-2 (cover letters)
 - **Database**: PostgreSQL + Redis
 - **Frontend**: Next.js, TailwindCSS, shadcn/ui
 - **Infra**: Docker, GitHub Actions, AWS S3, Vercel
