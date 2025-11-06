@@ -8,17 +8,21 @@ services:
     environment:
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
       - QUERY_DEFAULTS_LIMIT=20
-    restart: unless-stopped
+    # restart: unless-stopped   # disabled for debugging
 
   backend:
     build:
       context: ..
       dockerfile: Dockerfile.backend
+    volumes:
+      - ./hf_cache:/app/.cache/huggingface
     container_name: job-backend
     ports:
       - "8000:8000"
     env_file:
-      - .env           # contains WEAVIATE_URL and NOTION_TOKEN
+      - ../.env     # change path if .env is in infra/
+    environment:
+      - PYTHONUNBUFFERED=1
     depends_on:
       - weaviate
-    restart: unless-stopped
+    # restart: unless-stopped   # disabled for debugging

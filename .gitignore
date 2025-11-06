@@ -28,3 +28,5 @@ D:\weaviate_data/
 # Node / frontend 
 node_modules/
 .next/
+
+infra/hf_cache/
