@@ -15,7 +15,7 @@ An AI-powered assistant that unifies job boards, tailors opportunities to your r
 - **AI/NLP**: spaCy, Hugging Face, sentence-transformers
 - **Vector DB**: Weaviate
 - **Job Aggregation**: Playwright, BeautifulSoup, APIs
-- **LLMs**: OpenAI GPT-2 (cover letters)
+- **LLMs**: OpenAI GPT-4 (cover letters)
 - **Database**: PostgreSQL + Redis
 - **Frontend**: Next.js, TailwindCSS, shadcn/ui
 - **Infra**: Docker, GitHub Actions, AWS S3, Vercel
@@ -58,7 +58,7 @@ job-hunting-agent/
 │   │   │   │   ├── jobs.py             # Job search + Weaviate queries
 │   │   │   │   ├── coverletter.py      # Cover letter generation
 │   │   │   │   ├── tracking.py         # Application tracking
-│   │   │   │   └── matcher.py            # Job matching and ranking
+│   │   │   │   └── users.py            # Auth / profile management
 │   │   │   └── __init__.py
 │   │   │
 │   │   ├── core/                       # Core logic
@@ -126,7 +126,9 @@ job-hunting-agent/
 │
 ├── .env                                # Environment variables (local)
 ├── README.md
+├── requirements.txt
 └── LICENSE
+
 ```
 ## 📄 License
 MIT License – feel free to use this project and adapt it.

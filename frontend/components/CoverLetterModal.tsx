@@ -5,8 +5,9 @@ export default function CoverLetterModal({ onClose }: { onClose: () => void }) {
   const [coverLetter, setCoverLetter] = useState<string>("Loading...");
 
   useEffect(() => {
-    generateCoverLetter().then(setCoverLetter);
-  }, []);
+  generateCoverLetter().then((letter) => setCoverLetter(letter as string));
+}, []);
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">

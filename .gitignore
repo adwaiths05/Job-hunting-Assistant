@@ -50,3 +50,12 @@ coverage/
 
 # pnpm store
 .pnpm-store/
+
+# --- MCP Secrets (The new stuff) ---
+credentials.json
+token.json
+
+# --- Browser MCP Artifacts ---
+playwright-report/
+test-results/
+blob-report/
