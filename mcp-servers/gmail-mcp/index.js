@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-
+import express from "express";
+import cors from "cors";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -11,12 +12,16 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// File paths
+// --- 1. Setup Express ---
+const app = express();
+app.use(cors());
+const PORT = process.env.PORT || 3003;
+
+// --- 2. Auth & File Paths ---
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TOKEN_PATH = path.join(__dirname, "token.json");
 const CREDENTIALS_PATH = path.join(__dirname, "credentials.json");
 
-// Load Auth Helper
 async function authorize() {
   if (!fs.existsSync(TOKEN_PATH)) {
     throw new Error("token.json not found. Run 'node get-token.js' first.");
@@ -26,19 +31,6 @@ async function authorize() {
   return google.auth.fromJSON(credentials);
 }
 
-const server = new Server(
-  {
-    name: "gmail-mcp",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
-
-// Helper to encode email for sending
 function createEmail(to, subject, message) {
   const str = [
     'Content-Type: text/plain; charset="UTF-8"',
@@ -57,6 +49,12 @@ function createEmail(to, subject, message) {
     .replace(/=+$/, "");
 }
 
+// --- 3. Setup MCP Server ---
+const server = new Server(
+  { name: "gmail-mcp", version: "1.0.0" },
+  { capabilities: { tools: {} } }
+);
+
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
@@ -66,7 +64,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {
-            query: { type: "string", description: "Search query (e.g. 'from:recruiter@google.com', 'subject:interview')" },
+            query: { type: "string", description: "Search query" },
             max_results: { type: "number", default: 10 },
           },
           required: ["query"],
@@ -78,31 +76,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {
-            message_id: { type: "string", description: "The ID of the email to read" },
+            message_id: { type: "string" },
           },
           required: ["message_id"],
         },
       },
       {
         name: "send_message",
-        description: "Send a new email (for follow-ups or thank you notes).",
+        description: "Send a new email.",
         inputSchema: {
           type: "object",
           properties: {
-            to: { type: "string", description: "Recipient email address" },
-            subject: { type: "string", description: "Email subject" },
-            body: { type: "string", description: "Email body content" },
+            to: { type: "string" },
+            subject: { type: "string" },
+            body: { type: "string" },
           },
           required: ["to", "subject", "body"],
         },
       },
       {
         name: "find_interview_invites",
-        description: "Smart search to find recent interview requests or scheduling emails.",
-        inputSchema: {
-          type: "object",
-          properties: {}, 
-        },
+        description: "Search to find recent interview requests.",
+        inputSchema: { type: "object", properties: {} },
       },
     ],
   };
@@ -114,46 +109,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const gmail = google.gmail({ version: "v1", auth });
 
   try {
-    // 📩 TOOL: LIST MESSAGES
     if (name === "list_messages") {
       const res = await gmail.users.messages.list({
         userId: "me",
         q: args.query,
         maxResults: args.max_results || 10,
       });
-
       const messages = res.data.messages || [];
-      if (messages.length === 0) {
-        return { content: [{ type: "text", text: "No emails found for that query." }] };
-      }
+      if (messages.length === 0) return { content: [{ type: "text", text: "No emails found." }] };
 
-      // Fetch snippets for context
       const summaries = [];
       for (const msg of messages) {
         const details = await gmail.users.messages.get({ userId: "me", id: msg.id });
         const subject = details.data.payload.headers.find(h => h.name === "Subject")?.value || "(No Subject)";
         const from = details.data.payload.headers.find(h => h.name === "From")?.value || "Unknown";
-        summaries.push(`- [ID: ${msg.id}] FROM: ${from} | SUBJECT: ${subject} | SNIPPET: ${details.data.snippet}`);
+        summaries.push(`- [ID: ${msg.id}] FROM: ${from} | SUBJECT: ${subject}`);
       }
-
-      return { content: [{ type: "text", text: `Found ${messages.length} emails:\n${summaries.join("\n")}` }] };
+      return { content: [{ type: "text", text: `Found emails:\n${summaries.join("\n")}` }] };
     }
 
-    // 📖 TOOL: READ MESSAGE
     if (name === "read_message") {
-      const res = await gmail.users.messages.get({
-        userId: "me",
-        id: args.message_id,
-        format: "full",
-      });
-
+      const res = await gmail.users.messages.get({ userId: "me", id: args.message_id, format: "full" });
       const headers = res.data.payload.headers;
       const subject = headers.find((h) => h.name === "Subject")?.value;
       const from = headers.find((h) => h.name === "From")?.value;
       const date = headers.find((h) => h.name === "Date")?.value;
-      
-      // Basic body decoding (text/plain)
       let body = "Unable to decode body.";
+      // Simplified body decoding
       const parts = res.data.payload.parts || [res.data.payload];
       for (const part of parts) {
         if (part.mimeType === "text/plain" && part.body.data) {
@@ -161,70 +143,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           break;
         }
       }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Date: ${date}\nFrom: ${from}\nSubject: ${subject}\n\nBody:\n${body}`,
-          },
-        ],
-      };
+      return { content: [{ type: "text", text: `Date: ${date}\nFrom: ${from}\nSubject: ${subject}\n\n${body}` }] };
     }
 
-    // 📤 TOOL: SEND MESSAGE
     if (name === "send_message") {
       const rawMessage = createEmail(args.to, args.subject, args.body);
-      const res = await gmail.users.messages.send({
-        userId: "me",
-        requestBody: { raw: rawMessage },
-      });
-      return { content: [{ type: "text", text: `Email sent successfully! ID: ${res.data.id}` }] };
+      const res = await gmail.users.messages.send({ userId: "me", requestBody: { raw: rawMessage } });
+      return { content: [{ type: "text", text: `Email sent! ID: ${res.data.id}` }] };
     }
 
-    // 🕵️‍♂️ TOOL: FIND INTERVIEW INVITES
     if (name === "find_interview_invites") {
-      // Search for keywords often used in invites
-      const query = "subject:(interview OR invitation OR scheduling OR availability) newer_than:14d";
-      
-      const res = await gmail.users.messages.list({
-        userId: "me",
-        q: query,
-        maxResults: 5,
-      });
-
+      const query = "subject:(interview OR invitation OR scheduling) newer_than:14d";
+      const res = await gmail.users.messages.list({ userId: "me", q: query, maxResults: 5 });
       const messages = res.data.messages || [];
-      if (messages.length === 0) {
-        return { content: [{ type: "text", text: "No recent interview invitations found in the last 14 days." }] };
-      }
-
-      // Automatically fetch full content for the Agent to analyze
+      if (messages.length === 0) return { content: [{ type: "text", text: "No recent interview invites found." }] };
+      
       const fullContent = [];
       for (const msg of messages) {
         const details = await gmail.users.messages.get({ userId: "me", id: msg.id });
         const subject = details.data.payload.headers.find(h => h.name === "Subject")?.value;
-        const from = details.data.payload.headers.find(h => h.name === "From")?.value;
         const snippet = details.data.snippet;
-        fullContent.push(`EMAIL ID: ${msg.id}\nFROM: ${from}\nSUBJECT: ${subject}\nCONTENT: ${snippet}\n-------------------`);
+        fullContent.push(`ID: ${msg.id} | SUBJECT: ${subject} | SNIPPET: ${snippet}`);
       }
-
-      return { 
-        content: [{ 
-          type: "text", 
-          text: `Found ${messages.length} potential interview emails. Please analyze these to extract dates:\n\n${fullContent.join("\n")}` 
-        }] 
-      };
+      return { content: [{ type: "text", text: `Potential Invites:\n${fullContent.join("\n")}` }] };
     }
 
     return { content: [{ type: "text", text: `Tool ${name} not found.` }], isError: true };
   } catch (error) {
-    return {
-      content: [{ type: "text", text: `Gmail API Error: ${error.message}` }],
-      isError: true,
-    };
+    return { content: [{ type: "text", text: `Gmail API Error: ${error.message}` }], isError: true };
   }
 });
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error("Gmail MCP Server running...");
+// --- 4. SSE Transport Setup ---
+let transport;
+app.get("/sse", async (req, res) => {
+  console.log("Gmail MCP: Client connected via SSE");
+  transport = new SSEServerTransport("/messages", res);
+  await server.connect(transport);
+});
+app.post("/messages", async (req, res) => {
+  if (transport) await transport.handlePostMessage(req, res);
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Gmail MCP running on http://localhost:${PORT}/sse`);
+});

@@ -1,4 +1,5 @@
 services:
+  # 🧠 Vector Database
   weaviate:
     image: semitechnologies/weaviate:latest
     container_name: weaviate
@@ -8,21 +9,83 @@ services:
     environment:
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
       - QUERY_DEFAULTS_LIMIT=20
-    # restart: unless-stopped   # disabled for debugging
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - DEFAULT_VECTORIZER_MODULE=none
+      - ENABLE_MODULES=text2vec-transformers
+    volumes:
+      - weaviate_data:/var/lib/weaviate
 
+  # ⚡ Cache & Task Queue
+  redis:
+    image: redis:alpine
+    container_name: job-redis
+    ports:
+      - "6379:6379"
+
+  # 🐍 Python Backend
   backend:
     build:
       context: ..
       dockerfile: Dockerfile.backend
-    volumes:
-      - ./hf_cache:/app/.cache/huggingface
     container_name: job-backend
     ports:
       - "8000:8000"
-    env_file:
-      - ../.env     # change path if .env is in infra/
     environment:
-      - PYTHONUNBUFFERED=1
+      - WEAVIATE_URL=http://weaviate:8080
+      - REDIS_URL=redis://redis:6379
+      # MCP Server URLs (Internal Docker Network)
+      - BROWSER_MCP_URL=http://browser-mcp:3001/sse
+      - NOTION_MCP_URL=http://notion-mcp:3002/sse
+      - GMAIL_MCP_URL=http://gmail-mcp:3003/sse
+      - CALENDAR_MCP_URL=http://calendar-mcp:3004/sse
+      # API Keys (Passed from your local .env)
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - NOTION_TOKEN=${NOTION_TOKEN}
+      - NOTION_DB_ID=${NOTION_DB_ID}
     depends_on:
       - weaviate
-    # restart: unless-stopped   # disabled for debugging
+      - redis
+      - browser-mcp
+      - notion-mcp
+
+  # 🌐 Browser MCP Agent
+  browser-mcp:
+    build:
+      context: ../mcp-servers/browser-mcp
+      dockerfile: ../../infra/Dockerfile.mcp
+    container_name: mcp-browser
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+
+  # 📝 Notion MCP Agent
+  notion-mcp:
+    build:
+      context: ../mcp-servers/notion-mcp
+      dockerfile: ../../infra/Dockerfile.mcp
+    container_name: mcp-notion
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - NOTION_API_KEY=${NOTION_TOKEN}
+      - NOTION_DATABASE_ID=${NOTION_DB_ID}
+
+  # 📅 Calendar MCP Agent
+  calendar-mcp:
+    build:
+      context: ../mcp-servers/calendar-mcp
+      dockerfile: ../../infra/Dockerfile.mcp
+    container_name: mcp-calendar
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+    # Mount credentials so we don't leak them in the image
+    volumes:
+      - ../mcp-servers/calendar-mcp/credentials.json:/app/credentials.json
+      - ../mcp-servers/calendar-mcp/token.json:/app/token.json
+
+volumes:
+  weaviate_data:

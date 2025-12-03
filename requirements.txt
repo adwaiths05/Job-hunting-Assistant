@@ -1,11 +1,12 @@
 fastapi
 uvicorn
-weaviate-client
 python-dotenv
 pydantic
 requests
 sqlalchemy
-psycopg2-binary 
-spacy  
+psycopg2-binary
 python-multipart
-notion-client
+weaviate-client
+# --- AI & Agents ---
+mistralai
+mcp

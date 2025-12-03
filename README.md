@@ -2,30 +2,38 @@
 
 An AI-powered assistant that unifies job boards, tailors opportunities to your resume, and generates personalized cover letters — helping you apply faster and smarter.
 
-## ✨ Features
-- 📄 **Resume Parsing** – Extracts skills, experience, and education from uploaded resumes.
-- 🔎 **Job Aggregation** – Fetches job postings from multiple boards (APIs + scraping).
-- 🧠 **Smart Matching** – Uses Weaviate + embeddings to rank jobs by relevance.
-- 📝 **Cover Letter Generation** – Creates tailored cover letters with GPT.
-- 📊 **Application Tracking** – Syncs applications to Notion or Postgres DB.
-- 🤖 **Agentic Workflow** – Autonomous AI agents handle each step of the pipeline.
+## ✨ Key Features
+
+### 🧠 Intelligent Core
+- **Resume Parsing:** Uses **Mixtral 8x7B** to intelligently extract skills, education, and experience from PDF/DOCX resumes (no rigid regex).
+- **Smart Matching:** Uses **Weaviate** vector search to semantically match your profile with job descriptions.
+- **Cover Letter Writer:** Generates highly personalized, professional cover letters using an LLM persona.
+
+### 🕵️‍♂️ Autonomous Agents (MCP)
+The system uses the **Model Context Protocol** to give the AI "hands" to interact with the real world:
+- **🌐 Browser Agent:** Scrapes real-time job listings from the web (LinkedIn, etc.).
+- **📅 Calendar Agent:** Auto-schedules interview prep sessions and reminders.
+- **📧 Gmail Agent:** Scans your inbox for interview invites and drafts follow-up emails.
+- **📝 Notion Agent:** Automatically tracks applied jobs in your Notion database.
 
 ## 🛠 Tech Stack
-- **Backend**: FastAPI, Python
-- **AI/NLP**: spaCy, Hugging Face, sentence-transformers
-- **Vector DB**: Weaviate
-- **Job Aggregation**: Playwright, BeautifulSoup, APIs
-- **LLMs**: OpenAI GPT-4 (cover letters)
-- **Database**: PostgreSQL + Redis
-- **Frontend**: Next.js, TailwindCSS, shadcn/ui
-- **Infra**: Docker, GitHub Actions, AWS S3, Vercel
+
+- **Backend:** FastAPI (Python), Docker
+- **AI Model:** Mistral AI (`open-mixtral-8x7b`) via API
+- **Vector DB:** Weaviate
+- **Agents:** Node.js Servers (Express + SSE) implementing MCP
+- **Frontend:** Next.js, TailwindCSS
+- **Infra:** Docker Compose (Orchestrates 6+ containers)
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- Docker & Docker Compose
+### 1. Prerequisites
+- **Docker & Docker Compose** (Essential)
+- **Node.js 18+** & **Python 3.10+**
+- **API Keys:**
+  - Mistral AI (Free tier)
+  - Google Cloud Console (for Gmail/Calendar)
+  - Notion Integration Token
 
 ### Clone Repo
 ```bash

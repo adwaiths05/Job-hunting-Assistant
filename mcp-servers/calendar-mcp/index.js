@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-
+import express from "express";
+import cors from "cors";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -10,33 +11,31 @@ import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { addDays, subDays, format, parseISO, startOfDay } from "date-fns";
+import { addDays, subDays, format, parseISO } from "date-fns";
 
-// File paths
+// --- 1. Setup Express ---
+const app = express();
+app.use(cors());
+const PORT = process.env.PORT || 3004;
+
+// --- 2. Auth & Paths ---
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TOKEN_PATH = path.join(__dirname, "token.json");
 const CREDENTIALS_PATH = path.join(__dirname, "credentials.json");
 
-// Load Auth Helper
 async function authorize() {
   if (!fs.existsSync(TOKEN_PATH)) {
-    throw new Error("token.json not found. Run 'node get-token.js' first.");
+    throw new Error("token.json not found.");
   }
   const content = fs.readFileSync(TOKEN_PATH);
   const credentials = JSON.parse(content);
   return google.auth.fromJSON(credentials);
 }
 
+// --- 3. Setup MCP Server ---
 const server = new Server(
-  {
-    name: "calendar-mcp",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
+  { name: "calendar-mcp", version: "1.0.0" },
+  { capabilities: { tools: {} } }
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -47,9 +46,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         description: "List calendar events for the next X days.",
         inputSchema: {
           type: "object",
-          properties: {
-            days: { type: "number", description: "Number of days to look ahead", default: 7 },
-          },
+          properties: { days: { type: "number", default: 7 } },
         },
       },
       {
@@ -58,23 +55,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {
-            summary: { type: "string", description: "Event title" },
-            description: { type: "string", description: "Event details" },
-            start_time: { type: "string", description: "ISO date string (e.g. 2023-10-27T10:00:00)" },
-            end_time: { type: "string", description: "ISO date string" },
+            summary: { type: "string" },
+            description: { type: "string" },
+            start_time: { type: "string" },
+            end_time: { type: "string" },
           },
           required: ["summary", "start_time", "end_time"],
         },
       },
       {
         name: "create_training_schedule",
-        description: "Auto-generates a multi-day preparation plan leading up to an interview.",
+        description: "Auto-generates a preparation plan.",
         inputSchema: {
           type: "object",
           properties: {
             job_title: { type: "string" },
             company: { type: "string" },
-            interview_date: { type: "string", description: "ISO date of the interview (e.g. 2023-11-01T14:00:00)" },
+            interview_date: { type: "string" },
           },
           required: ["job_title", "company", "interview_date"],
         },
@@ -89,7 +86,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const calendar = google.calendar({ version: "v3", auth });
 
   try {
-    // 📅 TOOL: LIST EVENTS
     if (name === "list_upcoming_events") {
       const days = args.days || 7;
       const now = new Date();
@@ -104,90 +100,70 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
 
       const events = res.data.items || [];
-      if (events.length === 0) {
-        return { content: [{ type: "text", text: "No upcoming events found." }] };
-      }
+      if (events.length === 0) return { content: [{ type: "text", text: "No upcoming events." }] };
 
       const summary = events.map((event) => {
         const start = event.start.dateTime || event.start.date;
         return `- ${start}: ${event.summary}`;
       });
-
-      return { content: [{ type: "text", text: `Upcoming Events:\n${summary.join("\n")}` }] };
+      return { content: [{ type: "text", text: `Upcoming:\n${summary.join("\n")}` }] };
     }
 
-    // ➕ TOOL: CREATE EVENT
     if (name === "create_event") {
       const event = {
         summary: args.summary,
         description: args.description,
-        start: { dateTime: args.start_time, timeZone: "UTC" }, // Adjust timeZone as needed
+        start: { dateTime: args.start_time, timeZone: "UTC" },
         end: { dateTime: args.end_time, timeZone: "UTC" },
       };
-
-      const res = await calendar.events.insert({
-        calendarId: "primary",
-        requestBody: event,
-      });
-
+      const res = await calendar.events.insert({ calendarId: "primary", requestBody: event });
       return { content: [{ type: "text", text: `Event created: ${res.data.htmlLink}` }] };
     }
 
-    // 🚀 TOOL: CREATE TRAINING SCHEDULE (The Agentic Logic)
     if (name === "create_training_schedule") {
       const interviewDate = parseISO(args.interview_date);
       const schedule = [];
-
-      // Define the plan (working backwards from interview)
       const plan = [
-        { daysBefore: 1, title: "Revision & Mock Interview", focus: "Review notes, practice pitch, sleep early." },
-        { daysBefore: 2, title: "Technical Deep Dive", focus: "Coding challenges, system design, technical concepts." },
-        { daysBefore: 3, title: "Project Storytelling", focus: "Refine STAR method stories for resume projects." },
-        { daysBefore: 4, title: "Company Culture Research", focus: "Values, mission, leadership principles." },
+        { daysBefore: 1, title: "Revision", focus: "Review notes." },
+        { daysBefore: 2, title: "Mock Interview", focus: "Practice pitch." },
+        { daysBefore: 3, title: "Culture Research", focus: "Values & Mission." },
       ];
 
       for (const item of plan) {
         const date = subDays(interviewDate, item.daysBefore);
-        // Defaulting training sessions to 6 PM - 8 PM
-        const start = new Date(date);
-        start.setHours(18, 0, 0); 
-        const end = new Date(date);
-        end.setHours(20, 0, 0);
-
-        // Don't schedule in the past
+        const start = new Date(date); start.setHours(18, 0, 0); 
+        const end = new Date(date); end.setHours(19, 0, 0);
         if (start < new Date()) continue;
 
         const event = {
           summary: `Prep: ${item.title} (${args.company})`,
-          description: `Focus Area: ${item.focus}\nRole: ${args.job_title}`,
+          description: `Focus: ${item.focus}`,
           start: { dateTime: start.toISOString() },
           end: { dateTime: end.toISOString() },
         };
-
-        const res = await calendar.events.insert({
-          calendarId: "primary",
-          requestBody: event,
-        });
-        schedule.push(`- Scheduled: ${item.title} on ${format(start, 'yyyy-MM-dd HH:mm')}`);
+        await calendar.events.insert({ calendarId: "primary", requestBody: event });
+        schedule.push(`- Scheduled: ${item.title} on ${format(start, 'yyyy-MM-dd')}`);
       }
-
-      return { 
-        content: [{ 
-          type: "text", 
-          text: `Training Plan Generated for ${args.company} Interview:\n\n${schedule.join("\n")}\n\nGood luck!` 
-        }] 
-      };
+      return { content: [{ type: "text", text: `Plan Generated:\n${schedule.join("\n")}` }] };
     }
 
     return { content: [{ type: "text", text: `Tool ${name} not found.` }], isError: true };
   } catch (error) {
-    return {
-      content: [{ type: "text", text: `Calendar API Error: ${error.message}` }],
-      isError: true,
-    };
+    return { content: [{ type: "text", text: `Calendar API Error: ${error.message}` }], isError: true };
   }
 });
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error("Calendar MCP Server running...");
+// --- 4. SSE Transport Setup ---
+let transport;
+app.get("/sse", async (req, res) => {
+  console.log("Calendar MCP: Client connected via SSE");
+  transport = new SSEServerTransport("/messages", res);
+  await server.connect(transport);
+});
+app.post("/messages", async (req, res) => {
+  if (transport) await transport.handlePostMessage(req, res);
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Calendar MCP running on http://localhost:${PORT}/sse`);
+});
