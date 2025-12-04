@@ -56,86 +56,46 @@ npm run dev
 ```
 ### Project Structure
 ```bash 
-job-hunting-agent/
-│
-├── backend/                           # Backend service (FastAPI + Weaviate)
+job-hunting-assistant/
+├── backend/                           # 🐍 FastAPI Backend
 │   ├── app/
-│   │   ├── api/                       # API endpoints
-│   │   │   ├── v1/                     # Versioned API
-│   │   │   │   ├── resume.py           # Resume upload/parse routes
-│   │   │   │   ├── jobs.py             # Job search + Weaviate queries
-│   │   │   │   ├── coverletter.py      # Cover letter generation
-│   │   │   │   ├── tracking.py         # Application tracking
-│   │   │   │   └── users.py            # Auth / profile management
-│   │   │   └── __init__.py
-│   │   │
-│   │   ├── core/                       # Core logic
-│   │   │   ├── config.py               # Settings/env variables
-│   │   │   ├── security.py             # Auth/JWT utils
-│   │   │   └── utils.py                # General helpers
-│   │   │
-│   │   ├── services/                   # Business logic modules
-│   │   │   ├── resume_parser.py        # spaCy/HF resume parsing
-│   │   │   ├── job_fetcher.py          # APIs + scraping jobs
-│   │   │   ├── weaviate_client.py      # Wrapper around Weaviate queries
-│   │   │   ├── matcher.py              # Embedding + ranking logic
-│   │   │   ├── coverletter_gen.py      # GPT-powered cover letter writer
-│   │   │   └── notion_sync.py          # Notion integration (optional)
-│   │   │
-│   │   ├── db/                         # Database models + session
-│   │   │   ├── models.py               # SQLAlchemy models (User, Resume, Job, App)
-│   │   │   ├── schemas.py              # Pydantic schemas
-│   │   │   └── session.py              # DB session management
-│   │   │
-│   │   ├── agents/                     # AI Agent Orchestration
-│   │   │   ├── resume_agent.py         # Handles resume processing
-│   │   │   ├── job_agent.py            # Handles fetching + inserting jobs
-│   │   │   ├── matcher_agent.py        # Handles Weaviate similarity queries
-│   │   │   ├── coverletter_agent.py    # Generates cover letters
-│   │   │   └── tracker_agent.py        # Syncs applications with Notion/DB
-│   │   │
-│   │   ├── cli.py                      # Optional: CLI scripts for DB, Weaviate, etc.
-│   │   └── main.py                     # FastAPI entrypoint
-│   │
-│   ├── tests/                          # Backend unit + integration tests
-│   │   ├── test_resume.py
-│   │   ├── test_jobs.py
-│   │   └── test_matcher.py
-│   │
-│   └── requirements.txt                # Python dependencies
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── services/
+│   │   ├── db/
+│   │   ├── agents/
+│   │   └── main.py
+│   └── tests/
 │
-├── frontend/                           # User-facing portal (Next.js)
-│   ├── pages/
-│   │   ├── index.tsx                   # Landing page
-│   │   ├── dashboard.tsx               # Job matches + tracking
-│   │   └── upload.tsx                  # Resume upload
-│   ├── components/
-│   │   ├── JobCard.tsx                 # Job display component
-│   │   ├── ResumeUploader.tsx
-│   │   └── CoverLetterPreview.tsx
-│   ├── lib/
-│   │   └── api.ts                      # API client (calls FastAPI backend)
-│   ├── contexts/                       # React context for state management
-│   ├── hooks/                          # Custom hooks for frontend logic
-│   ├── styles/
-│   │   └── globals.css
-│   └── package.json
+├── frontend/                          # 🎨 React + Vite Frontend (Moved from Principal...)
+│   ├── src/                           # Source code (pages, components, hooks)
+│   ├── public/                        # Static assets (favicon, etc.)
+│   ├── shared/                        # Shared types/schemas (Zod, Drizzle models)
+│   ├── index.html                     # Entry point
+│   ├── package.json                   # Frontend dependencies
+│   ├── vite.config.ts                 # Vite config (Updated proxy & paths)
+│   ├── tsconfig.json                  # TypeScript config (Updated paths)
+│   ├── tailwind.config.ts             # Tailwind config
+│   ├── postcss.config.js              # PostCSS config
+│   └── components.json                # Shadcn UI config
 │
-├── infra/                              # Infrastructure as code
-│   ├── docker-compose.yml              # Local setup (API + DB + Weaviate)
-│   ├── Dockerfile.backend              # Backend container
-│   ├── Dockerfile.frontend             # Frontend container   
-│   └── README.md
+├── infra/                             # 🏗️ Infrastructure & Docker
+│   ├── docker-compose.yml             # Orchestration (Updated with frontend)
+│   ├── Dockerfile.backend             # Backend image (Moved here)
+│   ├── Dockerfile.frontend            # Frontend image (Newly created)
+│   └── Dockerfile.mcp                 # Shared MCP server image
 │
-├── scripts/                            # Helper scripts (data ingestion, setup)
-│   ├── init_weaviate.py                # Bootstrap Weaviate schema
-│   ├── load_jobs.py                    # Load test job data
-│   └── migrate_db.py                   # Run migrations
+├── mcp-servers/                       # 🤖 MCP Agents (Node.js)
+│   ├── browser-mcp/
+│   ├── calendar-mcp/
+│   ├── gmail-mcp/
+│   └── notion-mcp/
 │
-├── .env                                # Environment variables (local)
-├── README.md
-├── requirements.txt
-└── LICENSE
+├── .gitignore                         # Updated to ignore dist/, .env, etc.
+├── requirements.txt                   # Python dependencies
+├── LICENSE
+├── .env
+└── README.md
 
 ```
 ## 📄 License
