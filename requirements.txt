@@ -15,3 +15,6 @@ sqlalchemy
 psycopg2-binary
 passlib[bcrypt]
 python-jose[cryptography]
+# --- Testing ---
+pytest
+httpx
