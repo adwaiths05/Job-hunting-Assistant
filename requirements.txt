@@ -10,3 +10,8 @@ weaviate-client
 # --- AI & Agents ---
 mistralai
 mcp
+# --- Database & Auth ---
+sqlalchemy
+psycopg2-binary
+passlib[bcrypt]
+python-jose[cryptography]

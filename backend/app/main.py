@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 # Import the new module
 from app.api.v1 import resume, jobs, matcher, coverletter, tracking, assistant 
+from app.db.session import engine, Base
+# Create tables automatically
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Job Hunting Assistant", version="1.0")
 
