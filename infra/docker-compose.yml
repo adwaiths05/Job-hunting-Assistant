@@ -26,7 +26,8 @@ services:
   backend:
     build:
       context: ..
-      dockerfile: Dockerfile.backend
+      # UPDATED: Pointing to the new location in infra/
+      dockerfile: infra/Dockerfile.backend
     container_name: job-backend
     ports:
       - "8000:8000"
@@ -86,6 +87,22 @@ services:
     volumes:
       - ../mcp-servers/calendar-mcp/credentials.json:/app/credentials.json
       - ../mcp-servers/calendar-mcp/token.json:/app/token.json
+
+  # 🎨 Frontend (Vite + React)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../infra/Dockerfile.frontend
+    container_name: job-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_TARGET=http://backend:8000
+    depends_on:
+      - backend
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
 
 volumes:
   weaviate_data:
