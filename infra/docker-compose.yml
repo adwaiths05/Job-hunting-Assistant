@@ -26,7 +26,6 @@ services:
   backend:
     build:
       context: ..
-      # UPDATED: Pointing to the new location in infra/
       dockerfile: infra/Dockerfile.backend
     container_name: job-backend
     ports:
@@ -39,7 +38,7 @@ services:
       - NOTION_MCP_URL=http://notion-mcp:3002/sse
       - GMAIL_MCP_URL=http://gmail-mcp:3003/sse
       - CALENDAR_MCP_URL=http://calendar-mcp:3004/sse
-      # API Keys (Passed from your local .env)
+      # API Keys
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       - NOTION_TOKEN=${NOTION_TOKEN}
       - NOTION_DB_ID=${NOTION_DB_ID}
@@ -49,16 +48,18 @@ services:
       - browser-mcp
       - notion-mcp
 
-  # 🌐 Browser MCP Agent
+  # 🌐 Browser MCP Agent (Updated to use Playwright image)
   browser-mcp:
     build:
       context: ../mcp-servers/browser-mcp
-      dockerfile: ../../infra/Dockerfile.mcp
+      dockerfile: ../../infra/Dockerfile.browser
     container_name: mcp-browser
     ports:
       - "3001:3001"
     environment:
       - PORT=3001
+    # Shared memory size is crucial for Playwright stability
+    shm_size: '2gb'
 
   # 📝 Notion MCP Agent
   notion-mcp:
@@ -73,6 +74,20 @@ services:
       - NOTION_API_KEY=${NOTION_TOKEN}
       - NOTION_DATABASE_ID=${NOTION_DB_ID}
 
+  # 📧 Gmail MCP Agent
+  gmail-mcp:
+    build:
+      context: ../mcp-servers/gmail-mcp
+      dockerfile: ../../infra/Dockerfile.mcp
+    container_name: mcp-gmail
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+    volumes:
+      - ../mcp-servers/gmail-mcp/credentials.json:/app/credentials.json
+      - ../mcp-servers/gmail-mcp/token.json:/app/token.json
+
   # 📅 Calendar MCP Agent
   calendar-mcp:
     build:
@@ -83,7 +98,6 @@ services:
       - "3004:3004"
     environment:
       - PORT=3004
-    # Mount credentials so we don't leak them in the image
     volumes:
       - ../mcp-servers/calendar-mcp/credentials.json:/app/credentials.json
       - ../mcp-servers/calendar-mcp/token.json:/app/token.json

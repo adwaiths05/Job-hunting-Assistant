@@ -3,7 +3,6 @@ import type { Job, Application, ResumeAnalysis, AgentStatus } from "@shared/sche
 
 // Helper to handle API responses
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  // Proxied requests go to http://localhost:8000/api/v1/...
   const res = await fetch(`/api/v1${endpoint}`, {
     headers: {
       "Content-Type": "application/json",
@@ -23,7 +22,6 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 // --- JOBS ---
 
 export async function searchJobs(query: string = ""): Promise<Job[]> {
-  // Matches backend/app/api/v1/jobs.py
   const response = await fetchApi<{ results: any[] }>("/jobs/search-jobs", {
     method: "POST",
     body: JSON.stringify({ 
@@ -33,39 +31,40 @@ export async function searchJobs(query: string = ""): Promise<Job[]> {
   });
   
   // Transform Weaviate format to frontend Job schema
+  // STRICT: No mock scores or salaries.
   return response.results.map((j: any, i: number) => ({
     id: j._additional?.id || `job-${i}`,
     title: j.title,
     company: j.company,
-    location: j.location || "Remote",
-    salary: "$100k - $150k", // Placeholder (Vectors don't usually store this)
+    location: j.location || "Not specified",
+    salary: "Not disclosed", // Weaviate schema doesn't have salary yet
     description: j.description,
-    matchScore: Math.floor(Math.random() * 20) + 80, // Mock score for now
-    remote: true,
-    postedAt: "Recently"
+    matchScore: 0, // Score is 0 unless calculated by backend
+    remote: false, // Default to false if unknown
+    postedAt: "Unknown"
   }));
 }
 
 export async function getJobById(id: string): Promise<Job | undefined> {
-  // Fallback since we don't have a direct ID endpoint yet
+  // Rely on search cache or fetch fresh
   const jobs = await searchJobs();
   return jobs.find(job => job.id === id);
 }
 
 export async function getAgentStatus(): Promise<AgentStatus> {
-  // Mock status (Backend implementation pending)
-  return {
-    isActive: true,
-    currentTask: "Scanning for new opportunities...",
-    jobsScanned: 124,
-    lastScan: new Date().toISOString(),
-  };
+  // STRICT: Attempt to fetch real status. If endpoint doesn't exist, throw error.
+  // This ensures we know if the backend agent logic is missing.
+  try {
+    return await fetchApi<AgentStatus>("/assistant/status");
+  } catch (error) {
+    console.error("Agent status endpoint missing or failed", error);
+    throw error; // Propagate error to UI
+  }
 }
 
 // --- RESUME ---
 
 export async function analyzeResume(text: string): Promise<ResumeAnalysis> {
-  // Convert text to file for the backend upload endpoint
   const blob = new Blob([text], { type: 'text/plain' });
   const formData = new FormData();
   formData.append('file', blob, 'resume.txt');
@@ -75,17 +74,18 @@ export async function analyzeResume(text: string): Promise<ResumeAnalysis> {
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Failed to analyze resume");
+  if (!res.ok) throw new Error("Failed to upload resume for analysis");
   
   const data = await res.json();
   const parsed = data.data || {};
   
+  // STRICT: Only use returned data
   return {
-    actionVerbs: [],
+    actionVerbs: [], // Backend parser needs to implement this specifically to return it
     metrics: [],
     weakWords: [],
-    missingSkills: parsed.skills || ["System Design", "Kubernetes"], // Use parsed skills if available
-    score: 85
+    missingSkills: parsed.skills || [],
+    score: 0 // No fake score
   };
 }
 
@@ -95,7 +95,6 @@ export async function generateCoverLetter(
   jobDescription: string, 
   resumeText: string = "My Resume Text" 
 ): Promise<string> {
-  // Matches backend/app/api/v1/coverletter.py
   const res = await fetchApi<{ cover_letter: string }>("/coverletter/generate", {
     method: "POST",
     body: JSON.stringify({ 
@@ -110,16 +109,16 @@ export async function generateCoverLetter(
 // --- TRACKING ---
 
 export async function getApplications(): Promise<Application[]> {
-  // Mock return until backend GET endpoint is added
-  return []; 
+  // STRICT: Fetch from real backend endpoint
+  return await fetchApi<Application[]>("/tracking/applications");
 }
 
 export async function syncKanban(applications: Application[]): Promise<void> {
-  // Mock sync
-  console.log("Syncing kanban...", applications);
+  // Implementation pending backend support for batch sync
+  console.log("Syncing kanban not yet implemented on backend");
 }
 
 export async function chatWithAI(message: string): Promise<string> {
-  // Mock chat until /chat endpoint is robust
-  return `I received: "${message}". I'm working on finding you the best roles!`;
+  // Implementation pending /chat endpoint
+  throw new Error("Chat endpoint not yet implemented");
 }
